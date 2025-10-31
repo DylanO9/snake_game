@@ -15,10 +15,20 @@ struct Point {
     int c;
 };
 
+struct Pivot {
+    struct Point *coordinates;
+    int direction;    
+};
+
+struct Snake_Body {
+    struct Point *piece;
+    int direction; 
+};
+
 struct Snake {
     int size;
     int apples_eaten;
-    struct Point *body[BOARD_LEN*BOARD_LEN];
+    struct Snake_Body *body[BOARD_LEN*BOARD_LEN];
 };
 
 int init_snake(struct Snake *);
@@ -26,7 +36,7 @@ int place_snake(char board[][BOARD_LEN], struct Snake *);
 int setup_board(char board[][BOARD_LEN]);
 int print_board(char board[][BOARD_LEN]); 
 int process_input();
-int move_snake(struct Snake *, int direction);
+int move_snake(struct Snake *);
 int eat_apple();
 int place_snake(char board[][BOARD_LEN], struct Snake *);
 
@@ -39,14 +49,14 @@ int main() {
     print_board(board); 
     int success = 1;
     while (success) {
+        system("clear");
         setup_board(board);
-        move_snake(&my_snake, RIGHT);
+        move_snake(&my_snake);
         success = place_snake(board, &my_snake);
         if (!success)
             break;
         print_board(board); 
-        sleep(1);
-        system("clear");
+        usleep(100000);
     } 
     printf("Game Over\n");
 }
@@ -54,18 +64,29 @@ int main() {
 int init_snake(struct Snake *my_snake) {
     my_snake->size = 0;
     my_snake->apples_eaten = 0;
-
-    // Place a length of 3 in the middle of the board
     int mid_idx = BOARD_LEN / 2;
-    struct Point *back = (struct Point *)malloc(sizeof(struct Point));
-    back->r = mid_idx;  
-    back->c = mid_idx - 1;
-    struct Point *mid = (struct Point *)malloc(sizeof(struct Point));
-    mid->r = mid_idx;
-    mid->c = mid_idx;
-    struct Point *front = (struct Point *)malloc(sizeof(struct Point));
-    front->r = mid_idx;
-    front->c = mid_idx + 1;
+
+    struct Snake_Body *back = (struct Snake_Body *)malloc(sizeof(struct Snake_Body));
+    struct Point *back_p = (struct Point *) malloc(sizeof(struct Point));
+    back->piece = back_p;
+    back->direction = RIGHT;
+    back_p->r = mid_idx;  
+    back_p->c = mid_idx - 1;
+
+    struct Snake_Body *mid = (struct Snake_Body *)malloc(sizeof(struct Snake_Body));
+    struct Point *mid_p = (struct Point *) malloc(sizeof(struct Point));
+    mid->piece = mid_p;
+    mid->direction = RIGHT;
+    mid_p->r = mid_idx;
+    mid_p->c = mid_idx;
+
+    struct Snake_Body *front = (struct Snake_Body *)malloc(sizeof(struct Snake_Body));
+    struct Point *front_p = (struct Point *) malloc(sizeof(struct Point));
+    front->piece = front_p;
+    front->direction = RIGHT;
+    front_p->r = mid_idx;
+    front_p->c = mid_idx + 1;
+
     my_snake->body[0] = back;
     my_snake->body[1] = mid;
     my_snake->body[2] = front;
@@ -74,14 +95,14 @@ int init_snake(struct Snake *my_snake) {
 
 int place_snake(char board[][BOARD_LEN], struct Snake *my_snake) {
     // Look through all the points, and place them 
-    struct Point **pp = my_snake->body;
+    struct Snake_Body **pp = my_snake->body;
     for (int i = 0; *(pp + i) != NULL; i++) {
-        int r = (*(pp + i))->r;
-        int c = (*(pp + i))->c;
+        int r = (*(pp + i))->piece->r;
+        int c = (*(pp + i))->piece->c;
         if (r <= 0 || r >= BOARD_LEN-1 || c <= 0 || c >= BOARD_LEN-1) {
             return 0;
         } 
-        board[r][c] = '-';
+        board[r][c] = '.';
     } 
     return 1;
 }
@@ -123,31 +144,26 @@ int process_input() {
     
 }
 
-int move_snake(struct Snake *my_snake, int direction) {
-    struct Point **pp = my_snake->body;
+int move_snake(struct Snake *my_snake) {
+    struct Snake_Body **body = my_snake->body;
     
-    for (int i = 0; *(pp + i) != NULL; i++) {
-        int r = (*(pp + i))->r;
-        int c = (*(pp + i))->c;
-        
-        switch(direction) {
-            case LEFT:
-                c--;
-                break;
+    for (int i = 0; *(body + i) != NULL; i++) { 
+        struct Snake_Body *curr_body = *(body + i); 
+        switch (curr_body->direction) {
             case RIGHT:
-                c++;
+                curr_body->piece->c++;
+                break;
+            case LEFT:
+                curr_body->piece->c--;
                 break;
             case UP:
-                r++;
+                curr_body->piece->r++;
                 break;
-            case DOWN:
-                r--;
+            case DOWN:  
+                curr_body->piece->r--;
                 break;
         }
-        (*(pp + i))->r = r;
-        (*(pp + i))->c = c;
-    }
-    return 1;
+    } 
 }
 
 int eat_apple() {
