@@ -5,6 +5,10 @@
 #include <time.h>
 
 #define BOARD_LEN   20
+#define LEFT        0
+#define RIGHT       1
+#define UP          2
+#define DOWN        3
 
 struct Point {
     int r;
@@ -17,22 +21,34 @@ struct Snake {
     struct Point *body[BOARD_LEN*BOARD_LEN];
 };
 
-int init_snake(struct Snake*);
-int place_snake(char board[][BOARD_LEN], struct Snake*);
+int init_snake(struct Snake *);
+int place_snake(char board[][BOARD_LEN], struct Snake *);
 int setup_board(char board[][BOARD_LEN]);
 int print_board(char board[][BOARD_LEN]); 
 int process_input();
-int move_snake();
+int move_snake(struct Snake *, int direction);
 int eat_apple();
 int place_snake(char board[][BOARD_LEN], struct Snake *);
 
 int main() {
     char board[BOARD_LEN][BOARD_LEN];
     struct Snake my_snake= {};
-    setup_board(board);
     init_snake(&my_snake);
+    setup_board(board);
     place_snake(board, &my_snake);
     print_board(board); 
+    int success = 1;
+    while (success) {
+        setup_board(board);
+        move_snake(&my_snake, RIGHT);
+        success = place_snake(board, &my_snake);
+        if (!success)
+            break;
+        print_board(board); 
+        sleep(1);
+        system("clear");
+    } 
+    printf("Game Over\n");
 }
 
 int init_snake(struct Snake *my_snake) {
@@ -59,12 +75,15 @@ int init_snake(struct Snake *my_snake) {
 int place_snake(char board[][BOARD_LEN], struct Snake *my_snake) {
     // Look through all the points, and place them 
     struct Point **pp = my_snake->body;
-    
     for (int i = 0; *(pp + i) != NULL; i++) {
         int r = (*(pp + i))->r;
         int c = (*(pp + i))->c;
+        if (r <= 0 || r >= BOARD_LEN-1 || c <= 0 || c >= BOARD_LEN-1) {
+            return 0;
+        } 
         board[r][c] = '-';
     } 
+    return 1;
 }
 
 int setup_board(char board[][BOARD_LEN]) {
@@ -104,8 +123,31 @@ int process_input() {
     
 }
 
-int move_snake() {
-
+int move_snake(struct Snake *my_snake, int direction) {
+    struct Point **pp = my_snake->body;
+    
+    for (int i = 0; *(pp + i) != NULL; i++) {
+        int r = (*(pp + i))->r;
+        int c = (*(pp + i))->c;
+        
+        switch(direction) {
+            case LEFT:
+                c--;
+                break;
+            case RIGHT:
+                c++;
+                break;
+            case UP:
+                r++;
+                break;
+            case DOWN:
+                r--;
+                break;
+        }
+        (*(pp + i))->r = r;
+        (*(pp + i))->c = c;
+    }
+    return 1;
 }
 
 int eat_apple() {
